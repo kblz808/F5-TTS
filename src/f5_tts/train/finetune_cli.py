@@ -72,6 +72,12 @@ def parse_args():
         help="Use 8-bit Adam optimizer from bitsandbytes",
     )
 
+    parser.add_argument(
+        "--force_fresh_start",
+        action="store_true",
+        help="Force fresh start of training",
+    )
+
     return parser.parse_args()
 
 
@@ -84,6 +90,9 @@ def main():
     checkpoint_path = str(files("f5_tts").joinpath(f"../../ckpts/{args.dataset_name}"))
 
     # Model parameters based on experiment name
+    if args.force_fresh_start and os.path.exists(checkpoint_path):
+        shutil.rmtree(checkpoint_path)
+        os.mkdir(checkpoint_path)
 
     if args.exp_name == "F5TTS_v1_Base":
         wandb_resume_id = None

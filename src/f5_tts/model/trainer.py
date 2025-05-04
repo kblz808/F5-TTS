@@ -100,6 +100,7 @@ class Trainer:
         self.model = model
 
         if self.is_main:
+
             self.ema_model = EMA(model, include_online_model=False, **ema_kwargs)
             self.ema_model.to(self.accelerator.device)
 
@@ -187,6 +188,11 @@ class Trainer:
             return 0
 
         self.accelerator.wait_for_everyone()
+
+        if any(f.startswith("pretrained_") for f in os.listdir(self.checkpoint_path)):
+            print("Found pretrained model, but skipping for training from scratch")
+            return 0
+
         if "model_last.pt" in os.listdir(self.checkpoint_path):
             latest_checkpoint = "model_last.pt"
         else:
@@ -196,6 +202,8 @@ class Trainer:
                 for f in os.listdir(self.checkpoint_path)
                 if (f.startswith("model_") or f.startswith("pretrained_")) and f.endswith((".pt", ".safetensors"))
             ]
+            if not all_checkpoints:
+                return 0 # No checkpoints to load, start from scratch
 
             # First try to find regular training checkpoints
             training_checkpoints = [f for f in all_checkpoints if f.startswith("model_") and f != "model_last.pt"]
